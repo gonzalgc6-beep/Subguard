@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SubGuard — Control de Suscripciones y Ahorro</title>
+    <style>
+        :root {
+            --bg-main: #0f172a;
+            --bg-card: #1e293b;
+            --bg-input: #334155;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --accent: #10b981;
+            --accent-hover: #059669;
+            --pro-gold: #f59e0b;
+            --danger: #ef4444;
+            --border: #334155;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-main);
+            color: var(--text-main);
+            display: flex;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .app-container {
+            width: 100%;
+            max-width: 480px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .logo {
+            font-size: 1.4rem;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+        }
+
+        .logo span {
+            color: var(--accent);
+        }
+
+        .badge-plan {
+            background: var(--bg-card);
+            border: 1px solid var(--pro-gold);
+            color: var(--pro-gold);
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .badge-plan.is-pro {
+            background: var(--pro-gold);
+            color: #000;
+        }
+
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        .stat-card {
+            background: var(--bg-card);
+            padding: 16px;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+        }
+
+        .stat-label {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-bottom: 4px;
+        }
+
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+
+        .stat-value.highlight {
+            color: var(--accent);
+        }
+
+        .form-card {
+            background: var(--bg-card);
+            padding: 16px;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .form-row {
+            display: flex;
+            gap: 10px;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 10px 12px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            background: var(--bg-input);
+            color: var(--text-main);
+            font-size: 0.9rem;
+            outline: none;
+        }
+
+        input:focus, select:focus {
+            border-color: var(--accent);
+        }
+
+        button.btn-primary {
+            background: var(--accent);
+            color: #000;
+            font-weight: 700;
+            border: none;
+            padding: 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.95rem;
+            transition: background 0.2s;
+        }
+
+        button.btn-primary:hover {
+            background: var(--accent-hover);
+        }
+
+        .actions-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .btn-export {
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text-muted);
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            cursor: pointer;
+        }
+
+        .btn-export:hover {
+            color: var(--text-main);
+            border-color: var(--text-muted);
+        }
+
+        .sub-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .sub-item {
+            background: var(--bg-card);
+            padding: 14px;
+            border-radius: 10px;
+            border: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .sub-info h4 {
+            font-size: 1rem;
+            margin-bottom: 3px;
+        }
+
+        .sub-meta {
+            font-size: 0.78rem;
+            color: var(--text-muted);
+        }
+
+        .alert-soon {
+            color: var(--pro-gold);
+            font-weight: 600;
+        }
+
+        .sub-right {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .sub-price {
+            font-weight: 700;
+            font-size: 1.05rem;
+        }
+
+        .btn-delete {
+            background: rgba(239, 68, 68, 0.15);
+            color: var(--danger);
+            border: none;
+            width: 28px;
+            height: 28px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        /* Modal Paywall Monetización */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.8);
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            z-index: 100;
+        }
+
+        .modal-content {
+            background: var(--bg-card);
+            border: 1px solid var(--pro-gold);
+            border-radius: 16px;
+            padding: 24px;
+            max-width: 400px;
+            width: 100%;
+            text-align: center;
+        }
+
+        .modal-content h3 {
+            color: var(--pro-gold);
+            font-size: 1.4rem;
+            margin-bottom: 10px;
+        }
+
+        .modal-content p {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            line-height: 1.5;
+            margin-bottom: 18px;
+        }
+
+        .pro-features {
+            text-align: left;
+            background: var(--bg-main);
+            padding: 14px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            font-size: 0.85rem;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .btn-pro {
+            background: var(--pro-gold);
+            color: #000;
+            font-weight: 800;
+            border: none;
+            width: 100%;
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 1rem;
+            cursor: pointer;
+            margin-bottom: 10px;
+        }
+
+        .btn-close {
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+
+<div class="app-container">
+    <header>
+        <div class="logo">Sub<span>Guard</span></div>
+        <div id="planBadge" class="badge-plan" onclick="openPaywall()">PLAN GRATIS (3/3)</div>
+    </header>
+
+    <div class="dashboard-grid">
+        <div class="stat-card">
+            <div class="stat-label">Gasto Mensual</div>
+            <div class="stat-value highlight" id="monthlyTotal">0.00 €</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Proyección Anual</div>
+            <div class="stat-value" id="yearlyTotal">0.00 €</div>
+        </div>
+    </div>
+
+    <div class="form-card">
+        <input type="text" id="subName" placeholder="Nombre (ej. Gimnasio, Nube, Streaming...)" required>
+        <div class="form-row">
+            <input type="number" id="subPrice" placeholder="Precio (€)" step="0.01" min="0.01" required>
+            <select id="subCycle">
+                <option value="monthly">Mensual</option>
+                <option value="yearly">Anual</option>
+            </select>
+        </div>
+        <div class="form-row">
+            <select id="subCategory">
+                <option value="Entretenimiento">Entretenimiento</option>
+                <option value="Software / IA">Software / IA</option>
+                <option value="Salud y Deporte">Salud y Deporte</option>
+                <option value="Servicios">Servicios</option>
+            </select>
+            <input type="date" id="subDate" required>
+        </div>
+        <button class="btn-primary" onclick="addSubscription()">+ Añadir Suscripción</button>
+    </div>
+
+    <div class="actions-bar">
+        <span style="font-size: 0.9rem; font-weight: 600;">Tus Suscripciones Activas</span>
+        <button class="btn-export" onclick="exportCSV()">Exportar CSV (PRO)</button>
+    </div>
+
+    <div class="sub-list" id="subList"></div>
+</div>
+
+<!-- Modal de Monetización (Paywall) -->
+<div class="modal-overlay" id="paywallModal">
+    <div class="modal-content">
+        <h3>Desbloquea SubGuard PRO</h3>
+        <p>Has alcanzado el límite del plan gratuito. Toma el control total de tus finanzas y evita cobros sorpresa.</p>
+        <div class="pro-features">
+            <div>✓ Suscripciones ilimitadas</div>
+            <div>✓ Exportación de informes en CSV para impuestos</div>
+            <div>✓ Alertas prioritarias 48h antes de cada cobro</div>
+            <div>✓ Análisis de ahorro inteligente</div>
+        </div>
+        <button class="btn-pro" onclick="upgradeToPro()">Activar PRO — 4,99 €/mes</button>
+        <button class="btn-close" onclick="closePaywall()">Continuar con plan limitado</button>
+    </div>
+</div>
+
+<script>
+    // Estado inicial de la aplicación (100% libre de derechos, datos locales)
+    let subscriptions = JSON.parse(localStorage.getItem('subguard_data')) || [];
+    // PRO solo se activa después de verificar la suscripción con el servidor.
+    let isPro = false;
+    const FREE_LIMIT = 3;
+
+    // Establecer fecha por defecto a hoy
+    document.getElementById('subDate').valueAsDate = new Date();
+
+    function saveData() {
+        localStorage.setItem('subguard_data', JSON.stringify(subscriptions));
+    }
+
+    function addSubscription() {
+        // Lógica de monetización: Bloquear si supera el límite gratuito
+        if (!isPro && subscriptions.length >= FREE_LIMIT) {
+            openPaywall();
+            return;
+        }
+
+        const name = document.getElementById('subName').value.trim();
+        const price = parseFloat(document.getElementById('subPrice').value);
+        const cycle = document.getElementById('subCycle').value;
+        const category = document.getElementById('subCategory').value;
+        const nextDate = document.getElementById('subDate').value;
+
+        if (!name || isNaN(price) || price <= 0 || !nextDate) {
+            alert('Por favor, completa todos los campos correctamente.');
+            return;
+        }
+
+        const newSub = {
+            id: Date.now(),
+            name,
+            price,
+            cycle,
+            category,
+            nextDate
+        };
+
+        subscriptions.push(newSub);
+        saveData();
+        renderApp();
+
+        // Limpiar formulario
+        document.getElementById('subName').value = '';
+        document.getElementById('subPrice').value = '';
+    }
+
+    function deleteSubscription(id) {
+        subscriptions = subscriptions.filter(sub => sub.id !== id);
+        saveData();
+        renderApp();
+    }
+
+    function getDaysUntil(dateString) {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const target = new Date(dateString);
+        const diffTime = target - today;
+        return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    }
+
+    function renderApp() {
+        const listEl = document.getElementById('subList');
+        const badgeEl = document.getElementById('planBadge');
+        listEl.innerHTML = '';
+
+        // Actualizar insignia de plan
+        if (isPro) {
+            badgeEl.textContent = 'MIEMBRO PRO ★';
+            badgeEl.classList.add('is-pro');
+        } else {
+            badgeEl.textContent = `PLAN GRATIS (${subscriptions.length}/${FREE_LIMIT})`;
+            badgeEl.classList.remove('is-pro');
+        }
+
+        let monthlySum = 0;
+
+        subscriptions.forEach(sub => {
+            const monthlyCost = sub.cycle === 'monthly' ? sub.price : sub.price / 12;
+            monthlySum += monthlyCost;
+
+            const daysLeft = getDaysUntil(sub.nextDate);
+            let dateText = `Próximo cobro: ${sub.nextDate}`;
+            let alertClass = '';
+
+            if (daysLeft >= 0 && daysLeft <= 3) {
+                dateText = `¡Cobro en ${daysLeft === 0 ? 'hoy' : daysLeft + ' días'}!`;
+                alertClass = 'alert-soon';
+            }
+
+            const item = document.createElement('div');
+            item.className = 'sub-item';
+            item.innerHTML = `
+                <div class="sub-info">
+                    <h4>${sub.name} <span style="font-size:0.7rem; color:var(--accent); font-weight:normal;">[${sub.category}]</span></h4>
+                    <div class="sub-meta ${alertClass}">${dateText} • ${sub.cycle === 'monthly' ? 'Mensual' : 'Anual'}</div>
+                </div>
+                <div class="sub-right">
+                    <div class="sub-price">${sub.price.toFixed(2)} €</div>
+                    <button class="btn-delete" onclick="deleteSubscription(${sub.id})" title="Eliminar">×</button>
+                </div>
+            `;
+            listEl.appendChild(item);
+        });
+
+        document.getElementById('monthlyTotal').textContent = `${monthlySum.toFixed(2)} €`;
+        document.getElementById('yearlyTotal').textContent = `${(monthlySum * 12).toFixed(2)} €`;
+    }
+
+    // Funciones de Monetización
+    function openPaywall() {
+        document.getElementById('paywallModal').style.display = 'flex';
+    }
+
+    function closePaywall() {
+        document.getElementById('paywallModal').style.display = 'none';
+    }
+
+    async function upgradeToPro() {
+        const button = document.querySelector('.btn-pro');
+        button.disabled = true;
+        button.textContent = 'Conectando con Stripe…';
+        try {
+            const response = await fetch('/api/create-checkout-session', { method: 'POST' });
+            const result = await response.json();
+            if (!response.ok) throw new Error(result.error || 'No se pudo iniciar el pago.');
+            window.location.assign(result.url);
+        } catch (error) {
+            alert(error.message || 'No se pudo conectar con el servidor de pagos.');
+            button.disabled = false;
+            button.textContent = 'Activar PRO — 4,99 €/mes';
+        }
+    }
+
+    function exportCSV() {
+        if (!isPro) {
+            openPaywall();
+            return;
+        }
+        if (subscriptions.length === 0) {
+            alert('No hay datos para exportar.');
+            return;
+        }
+
+        let csvContent = "data:text/csv;charset=utf-8,Nombre,Precio,Ciclo,Categoria,Proximo_Cobro\n";
+        subscriptions.forEach(s => {
+            csvContent += `${s.name},${s.price},${s.cycle},${s.category},${s.nextDate}\n`;
+        });
+
+        const encodedUri = encodeURI(csvContent);
+        const link = document.createElement("a");
+        link.setAttribute("href", encodedUri);
+        link.setAttribute("download", "mis_suscripciones_subguard.csv");
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+
+    async function initializeApp() {
+        const params = new URLSearchParams(window.location.search);
+        const sessionId = params.get('session_id');
+        if (sessionId) {
+            try {
+                const response = await fetch('/api/activate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ sessionId })
+                });
+                const result = await response.json();
+                if (!response.ok) throw new Error(result.error || 'No se pudo verificar el pago.');
+                isPro = result.isPro;
+                window.history.replaceState({}, '', window.location.pathname);
+            } catch (error) {
+                alert(error.message || 'No se pudo verificar el pago.');
+            }
+        } else if (params.get('checkout') === 'cancelled') {
+            window.history.replaceState({}, '', window.location.pathname);
+        }
+
+        try {
+            const response = await fetch('/api/entitlement');
+            if (response.ok) isPro = (await response.json()).isPro;
+        } catch {
+            // La aplicación conserva su modo gratuito si el servidor no está disponible.
+        }
+        renderApp();
+    }
+
+    initializeApp();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,13 @@
+{
+  "name": "subguard",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "engines": { "node": ">=20" },
+  "scripts": { "start": "node server.mjs" },
+  "dependencies": {
+    "dotenv": "^16.4.7",
+    "express": "^5.1.0",
+    "stripe": "^18.5.0"
+  }
+}
